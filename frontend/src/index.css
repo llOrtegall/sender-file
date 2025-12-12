@@ -1,1 +1,36 @@
 @import "tailwindcss";
+
+/* Es necesario cargar todos los pesos y se podrían establecer en  @theme las variables de cada una*/
+@font-face {
+  font-family: 'IBM-Plex-200';
+  src: url('./assets/ibm-plex-mono-latin-200-normal.woff2') format('woff2');
+  font-weight: 200;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'IBM-Plex-400';
+  src: url('./assets/ibm-plex-mono-latin-400-normal.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'IBM-Plex-600';
+  src: url('./assets/ibm-plex-mono-latin-600-normal.woff2') format('woff2');
+  font-weight: 600;
+  font-style: normal;
+}
+
+@theme {
+  --font-imb-200: 'IBM-Plex-200';
+  --font-imb-400: 'IBM-Plex-400';
+  --font-imb-600: 'IBM-Plex-600';
+  --color-green-1: #111111;
+  --color-green-2: #10241A;
+  --color-green-3: #101F18;
+}
+
+:root {
+  font-family: "IBM-Plex-200", sans-serif;
+}

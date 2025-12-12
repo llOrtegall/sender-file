@@ -8,7 +8,7 @@ const UploadPage = lazy(() => import('../pages/UploadPage.tsx'))
 
 const router = createBrowserRouter([
   {
-    path: '/home',
+    path: '/',
     errorElement: <NotFound />,
     element: (
       <Suspense fallback={<Loading />}>
