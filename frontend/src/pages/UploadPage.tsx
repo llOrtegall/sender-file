@@ -39,17 +39,17 @@ export default function UploadPage() {
         {!downloadLink ? (
           // VISTA 1: FORMULARIO DE SUBIDA
           <div {...getRootProps()}
-            className="bg-green-3 rounded-full h-96 w-96 flex 
-            items-center justify-center border-dashed border-green-3"
+            className="bg-green-3 rounded-full h-96 w-96 flex cursor-pointer
+            items-center justify-center border-test border border-dashed border-green-4"
           >
-            <article className='flex flex-col items-center'>
+            <article className='flex flex-col items-center space-y-1.75'>
               <input {...getInputProps()} />
               <figure className=''>
                 <img src={MyIcon} width={55} />
               </figure>
-              <h2 className='font-imb-600'>Upload files</h2>
-              <p className="main-text">Drag and drop or click to upload</p>
-              <p className="sub-text">Accepts files between 1.00KB and 10.00MB.</p>
+              <h2 className='font-imb-600 text-[16px]'>Upload File</h2>
+              <p className="font-imb-400 text-[12px] text-gray-1 font-normal">Drag and drop or click to upload</p>
+              <p className="font-imb-400 text-[10px] text-gray-2">Max Upload: 1GB</p>
             </article>
           </div>
         ) : (
