@@ -1,27 +1,33 @@
-import { Router } from 'express';
-import multer from 'multer';
-import path from 'path';
-import fs from 'fs';
-import fileController from '../controllers/fileController.ts';
+import { Router } from "express";
+import {
+  uploadFileHandler,
+  downloadFileHandler,
+  listFilesHandler,
+  deleteFileHandler,
+  getUploadUrlHandler,
+  getDownloadUrlHandler,
+} from "../controllers/fileController";
 
-const router = Router();
+export const fileRouter = Router();
 
-// Multer config
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const dir = path.join(__dirname, '../../uploads');
-    if (!fs.existsSync(dir)) fs.mkdirSync(dir);
-    cb(null, dir);
-  },
-  filename: (req, file, cb) => {
-    const uniqueName = `${Date.now()}-${file.originalname}`;
-    cb(null, uniqueName);
-  },
-});
-const upload = multer({ storage });
+/**
+ * Rutas para gestionar archivos en R2
+ */
 
-router.post('/upload', upload.single('file'), fileController.uploadFile);
-router.get('/file-info/:id', fileController.getFileInfo);
-router.get('/download-content/:id', fileController.downloadFile);
+// Subir archivo
+fileRouter.post("/upload", uploadFileHandler);
 
-export default router;
+// Obtener URL firmada para subir directo (cliente PUT a R2)
+fileRouter.post("/upload-url", getUploadUrlHandler);
+
+// Descargar archivo
+fileRouter.get("/download/:fileName", downloadFileHandler);
+
+// Obtener URL para descarga directa (cliente GET a R2)
+fileRouter.get("/download-url/:fileName", getDownloadUrlHandler);
+
+// Listar archivos
+fileRouter.get("/list", listFilesHandler);
+
+// Eliminar archivo
+fileRouter.delete("/:fileName", deleteFileHandler);
