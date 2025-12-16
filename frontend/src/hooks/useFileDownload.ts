@@ -1,18 +1,21 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import axios from 'axios';
 
 export type FileData = {
   key: string;
-  downloadUrl: string;
-  expiresIn: number;
-  originalName: string;
-};
+  size?: number;
+  lastModified: string;
+}
+
+export type ResponseFileData = {
+  success: boolean;
+  files: FileData[];
+}
 
 type UseFileDownloadReturn = {
   fileData: FileData | null;
   isLoading: boolean;
-  error: string | null;
-  downloadFile: () => void;
+  error: string | null
 };
 
 export const useFileDownload = (fileId: string | undefined): UseFileDownloadReturn => {
@@ -32,23 +35,14 @@ export const useFileDownload = (fileId: string | undefined): UseFileDownloadRetu
       setError(null);
 
       try {
-        const response = await axios.get(`/download-url/${fileId}`);
+        const response = await axios.get<ResponseFileData>(`/search?searchTerm=${fileId}&exactMatch=false`);
         const data = response.data;
 
-        if (!data?.success || !data.downloadUrl || !data.key) {
-          throw new Error(data?.error || 'Respuesta inválida');
+        if (!data.success || data.files.length === 0) {
+          throw new Error('El archivo no existe o ya expiró.');
         }
 
-        const originalName = data.key.includes('-')
-          ? data.key.split('-').slice(1).join('-')
-          : data.key;
-
-        setFileData({
-          key: data.key,
-          downloadUrl: data.downloadUrl,
-          expiresIn: data.expiresIn ?? 0,
-          originalName,
-        });
+        setFileData(data.files[0]);
       } catch {
         setError('El archivo no existe o ya expiró.');
         setFileData(null);
@@ -60,22 +54,10 @@ export const useFileDownload = (fileId: string | undefined): UseFileDownloadRetu
     fetchFileInfo();
   }, [fileId]);
 
-  const downloadFile = useCallback(() => {
-    if (!fileData) return;
-
-    // Usar la URL firmada para descargar directamente desde R2
-    const link = document.createElement('a');
-    link.href = fileData.downloadUrl;
-    link.setAttribute('download', fileData.originalName);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  }, [fileData]);
 
   return {
     fileData,
     isLoading,
-    error,
-    downloadFile,
+    error
   };
 };
