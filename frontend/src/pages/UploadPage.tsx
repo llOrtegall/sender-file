@@ -4,7 +4,7 @@ import ErrorMessage from '../components/ui/ErrorMessage';
 import { useFileUpload } from '../hooks/useFileUpload';
 
 export default function UploadPage() {
-  const { uploadFile, downloadLink, isUploading, error, resetUpload } = useFileUpload();
+  const { uploadFile, downloadLink, isUploading, error, progress, resetUpload } = useFileUpload();
 
   const handleFileSelect = (file: File) => {
     uploadFile(file);
@@ -17,13 +17,12 @@ export default function UploadPage() {
   return (
     <>
       {error && <ErrorMessage message={error} onDismiss={resetUpload} />}
-      
-      <section>
-        {!downloadLink ? (
-          <UploadZone onFileSelect={handleFileSelect} isUploading={isUploading} />
-        ) : (
-          <UploadSuccess downloadLink={downloadLink} onUploadAgain={handleUploadAgain} />
-        )}
+
+      <section className="flex flex-col items-center gap-6">
+        {!downloadLink
+          ? <UploadZone onFileSelect={handleFileSelect} isUploading={isUploading} progress={progress} />
+          : <UploadSuccess downloadLink={downloadLink} onUploadAgain={handleUploadAgain} />
+        }
       </section>
     </>
   );
