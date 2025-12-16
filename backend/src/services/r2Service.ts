@@ -3,6 +3,7 @@ import {
   GetObjectCommand,
   ListObjectsV2Command,
   DeleteObjectCommand,
+  HeadObjectCommand,
 } from "@aws-sdk/client-s3";
 import { r2Client, r2Config } from "../config/r2";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
@@ -75,40 +76,6 @@ export async function uploadFile(
 }
 
 /**
- * Descarga un archivo de R2
- */
-export async function downloadFile(fileName: string): Promise<DownloadResponse> {
-  try {
-    const command = new GetObjectCommand({
-      Bucket: r2Config.bucketName,
-      Key: fileName,
-    });
-
-    const response = await r2Client.send(command);
-    const data = await response.Body?.transformToByteArray();
-
-    if (!data) {
-      return {
-        success: false,
-        error: "No se pudo leer el archivo",
-      };
-    }
-
-    return {
-      success: true,
-      data: Buffer.from(data),
-      contentType: response.ContentType || "application/octet-stream",
-    };
-  } catch (error) {
-    console.error("Error al descargar archivo de R2:", error);
-    return {
-      success: false,
-      error: `Error al descargar archivo: ${error instanceof Error ? error.message : "Unknown error"}`,
-    };
-  }
-}
-
-/**
  * Genera una URL firmada (PUT) para subir directo a R2 sin pasar por el VPS
  */
 export async function getUploadPresignedUrl(
@@ -165,6 +132,21 @@ export async function getUploadPresignedUrl(
  */
 export async function getDownloadPresignedUrl(key: string): Promise<DownloadUrlResponse> {
   try {
+    // Verificar existencia del objeto antes de devolver la URL
+    try {
+      const headCommand = new HeadObjectCommand({
+        Bucket: r2Config.bucketName,
+        Key: key,
+      });
+      await r2Client.send(headCommand);
+    } catch (err) {
+      // Si no existe, devolver error controlado
+      return {
+        success: false,
+        error: "Archivo no encontrado",
+      };
+    }
+
     // Si usas objetos públicos, devolver la URL pública evita usar URL firmada.
     if (r2Config.objectsArePublic) {
       return {
