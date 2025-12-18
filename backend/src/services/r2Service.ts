@@ -3,22 +3,13 @@ import { PutObjectCommand, GetObjectCommand, HeadObjectCommand } from "@aws-sdk/
 import { UploadUrlResponse } from "../types/index";
 import { r2Client, r2Config } from "../config/r2";
 
-type SearchFileResponse = {
-  success: boolean;
-  files?: Array<{
-    key: string;
-    size: number;
-    lastModified: Date;
-  }>;
-  error?: string;
-};
-
 type DownloadUrlResponse = {
   success: boolean;
   downloadUrl?: string;
   key?: string;
   expiresIn?: number;
   error?: string;
+  LastModified?: Date | undefined;
 };
 
 /**
@@ -84,38 +75,34 @@ export async function getDownloadPresignedUrl(key: string): Promise<DownloadUrlR
         Bucket: r2Config.bucketName,
         Key: key,
       });
-      await r2Client.send(headCommand);
+
+      const { LastModified, ContentLength } = await r2Client.send(headCommand);
+
+      if (!ContentLength) {
+        throw new Error("Archivo no encontrado");
+      }
+      // Generar URL firmada para descarga
+      const command = new GetObjectCommand({
+        Bucket: r2Config.bucketName,
+        Key: key,
+      });
+
+      const url = await getSignedUrl(r2Client, command, { expiresIn: r2Config.urlExpirySeconds || 300 });
+
+      return {
+        success: true,
+        downloadUrl: url,
+        key,
+        expiresIn: r2Config.urlExpirySeconds || 300,
+        LastModified
+      };
+
     } catch (err) {
       return {
         success: false,
         error: "Archivo no encontrado",
       };
     }
-
-    // Si los objetos son públicos, devolver la URL pública directamente
-    if (r2Config.objectsArePublic) {
-      return {
-        success: true,
-        downloadUrl: `${r2Config.publicUrl}/${key}`,
-        expiresIn: 0,
-        key,
-      };
-    }
-
-    // Generar URL firmada para descarga
-    const command = new GetObjectCommand({
-      Bucket: r2Config.bucketName,
-      Key: key,
-    });
-
-    const url = await getSignedUrl(r2Client, command, { expiresIn: r2Config.urlExpirySeconds || 300 });
-
-    return {
-      success: true,
-      downloadUrl: url,
-      key,
-      expiresIn: r2Config.urlExpirySeconds || 300,
-    };
   } catch (error) {
     console.error("Error al generar URL de descarga firmada:", error);
     return {
