@@ -1,31 +1,5 @@
+import {  getUploadPresignedUrl,  getDownloadPresignedUrl,} from "../services/r2Service";
 import { Request, Response } from "express";
-import multer, { Multer } from "multer";
-import { r2Config } from "../config/r2";
-import {
-  getUploadPresignedUrl,
-  getDownloadPresignedUrl,
-} from "../services/r2Service";
-
-// Configurar multer para manejo de uploads en memoria
-const upload = multer({
-  storage: multer.memoryStorage(),
-  limits: {
-    fileSize: r2Config.maxFileSize,
-  },
-  fileFilter: (req, file, cb) => {
-    const fileExtension = file.originalname.split(".").pop()?.toLowerCase();
-
-    if (!fileExtension || !r2Config.allowedTypes.includes(fileExtension)) {
-      cb(
-        new Error(
-          `Tipo de archivo no permitido. Permitidos: ${r2Config.allowedTypes.join(", ")}`
-        )
-      );
-    } else {
-      cb(null, true);
-    }
-  },
-});
 
 /**
  * Controlador para obtener URL firmada de subida (PUT) y clave
