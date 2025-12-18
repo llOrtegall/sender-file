@@ -10,7 +10,7 @@ export default function UploadSuccess({ downloadLink, onUploadAgain }: UploadSuc
   const [copied, setCopied] = useState(false);
 
   const copyToClipboard = useCallback(() => {
-    navigator.clipboard.writeText('http://localhost:5173/download/' + downloadLink.split('.r2.dev/')[1].split('-')[0]);
+    navigator.clipboard.writeText(downloadLink);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   }, [downloadLink]);
@@ -27,7 +27,7 @@ export default function UploadSuccess({ downloadLink, onUploadAgain }: UploadSuc
       <div className="flex items-center w-10/12 gap-1 px-2 py-1 rounded-md text-[#AAAAAA] font-imb-400 bg-green-1">
         <input
           type="text"
-          value={'http://localhost:5173/download/' + downloadLink.split('.r2.dev/')[1].split('-')[0]}
+          value={downloadLink}
           readOnly
           className="text-sm text-ellipsis flex-1 bg-transparent outline-none"
           aria-label="Download link"
