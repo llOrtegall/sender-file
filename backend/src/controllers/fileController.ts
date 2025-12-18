@@ -3,7 +3,6 @@ import multer, { Multer } from "multer";
 import { r2Config } from "../config/r2";
 import {
   getUploadPresignedUrl,
-  searchFiles,
   getDownloadPresignedUrl,
 } from "../services/r2Service";
 
@@ -59,37 +58,6 @@ export const getUploadUrlHandler = async (req: Request, res: Response) => {
     return res.status(500).json({
       success: false,
       error: `Error al generar URL de subida: ${error instanceof Error ? error.message : "Unknown error"}`,
-    });
-  }
-};
-
-/**
- * Controlador para buscar archivos en R2
- */
-export const searchFilesHandler = async (req: Request, res: Response) => {
-  try {
-    const { searchTerm, exactMatch } = req.query || {};
-
-    if (!searchTerm || typeof searchTerm !== "string") {
-      return res.status(400).json({
-        success: false,
-        error: "Se requiere el parámetro 'searchTerm'",
-      });
-    }
-
-    const isExactMatch = exactMatch === "true";
-    const result = await searchFiles(searchTerm, isExactMatch);
-
-    if (!result.success) {
-      return res.status(400).json(result);
-    }
-
-    return res.status(200).json(result);
-  } catch (error) {
-    console.error("Error en searchFilesHandler:", error);
-    return res.status(500).json({
-      success: false,
-      error: `Error al buscar archivos: ${error instanceof Error ? error.message : "Unknown error"}`,
     });
   }
 };
