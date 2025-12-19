@@ -10,12 +10,16 @@ type FileInfoProps = {
 export default function FileInfo({ fileData, isDownloading = false, onDownload }: FileInfoProps) {
   return (
     <section className="bg-green-5 min-w-156.5 flex flex-col items-center px-12 py-4 rounded-3xl space-y-4">
-      <h2 className="font-imb-600 text-lg text-gray-200 text-center wrap-break-word">{fileData.key}</h2>
+      <h2 className="font-imb-600 text-lg text-gray-200 text-center wrap-break-word">{
+      fileData.key.split('-').slice(1).join('-') || 'Unknown File'
+      }</h2>
 
       <article className="font-imb-400 text-sm text-gray-1 flex items-center gap-2">
-        <span className="truncate max-w-64" title={fileData.key}>{fileData.key}</span>
+        <span className="truncate max-w-64" title={fileData.key}>{fileData.key.split('-')[0] || 'Unknown Prefix'}</span>
         <span>•</span>
-        <span>{fileData.lastModified}</span>
+        <span>{fileData.LastModified.split('T')[0] || 'Unknown Date'}</span>
+        <span>{fileData.LastModified.split('T')[1].split('.')[0] || 'Unknown Time'}</span>
+
       </article>
 
       <button

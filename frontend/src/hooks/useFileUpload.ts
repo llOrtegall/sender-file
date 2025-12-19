@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import axios from 'axios';
+import { DOMAIN_URL } from '../main';
 
 export type UploadProgress = {
   percentage: number;
@@ -86,7 +87,7 @@ export const useFileUpload = (): UseFileUploadReturn => {
             // Usar el key devuelto por el backend
             const keyFile = getUrlRes.data.key;
             if (keyFile) {
-              setDownloadLink(`http://localhost:5173/download/${keyFile}`);
+              setDownloadLink(`${DOMAIN_URL}/download/${keyFile}`);
             }
             resolve();
           } else {

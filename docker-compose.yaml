@@ -1,0 +1,47 @@
+services:
+  # Backend API Service
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: ${IMG_NAME_BACK}:${VERSION_BACK}
+    container_name: ${CONTAINER_NAME_BACK}
+    ports:
+      - "3000:3000"
+    env_file:
+      - ./backend/.env
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "bun", "run", "-e", "fetch('http://localhost:3000/health').then(r => r.ok ? process.exit(0) : process.exit(1))"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+    networks:
+      - winkermind
+
+  # Frontend Client Service
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    image: ${IMG_NAME_FRONT}:${VERSION_FRONT}
+    container_name: ${CONTAINER_NAME_FRONT}
+    ports:
+      - "80:80"
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    volumes:
+      - ./frontend/nginx.conf:/etc/nginx/nginx.conf:ro
+    networks:
+      - winkermind
+
+
+networks:
+  winkermind:
+    external: true

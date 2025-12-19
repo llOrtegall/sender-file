@@ -6,7 +6,7 @@ export type FileData = {
   downloadUrl: string;
   key: string;
   size: number;
-  lastModified: string;
+  LastModified: string;
 };
 
 type UseFileDownloadReturn = {

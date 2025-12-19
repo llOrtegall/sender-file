@@ -1,0 +1,53 @@
+# Node modules
+**/node_modules
+**/npm-debug.log
+**/yarn-error.log
+**/yarn.lock
+**/package-lock.json
+
+# Build outputs
+**/dist
+**/build
+**/.next
+**/.cache
+
+# Environment files (se manejan específicamente en cada servicio)
+**/.env
+**/.env.local
+**/.env.*.local
+
+# Git
+.git
+.gitignore
+**/.gitattributes
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Documentation
+*.md
+!README.md
+
+# Test
+**/__tests__
+**/*.test.ts
+**/*.test.tsx
+**/*.spec.ts
+**/*.spec.tsx
+**/coverage
+
+# Logs
+**/logs
+**/*.log
+
+# Temporal
+**/tmp
+**/temp
