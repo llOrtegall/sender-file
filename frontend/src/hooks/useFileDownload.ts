@@ -59,23 +59,15 @@ export const useFileDownload = (fileId: string | undefined): UseFileDownloadRetu
     setError(null);
 
     try {
-      // Descargar el archivo como blob sin enviar credenciales (es una URL pre-firmada)
-      const blobResponse = await axios.get(downloadUrl, {
-        responseType: 'blob',
-        withCredentials: false, // R2 no requiere credenciales con URLs pre-firmadas
-      });
-
-      // Crear blob URL local y descargar
-      const blobUrl = window.URL.createObjectURL(blobResponse.data);
+      // Dejar que el navegador maneje la descarga directamente
+      // Esto hace que aparezca en el gestor de descargas de Chrome
+      // y muestre el progreso para archivos grandes
       const link = document.createElement('a');
-      link.href = blobUrl;
+      link.href = downloadUrl;
       link.setAttribute('download', key);
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-
-      // Liberar el blob URL
-      window.URL.revokeObjectURL(blobUrl);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al descargar el archivo.');
     } finally {

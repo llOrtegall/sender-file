@@ -2,6 +2,7 @@ export interface UploadUrlResponse {
   success: boolean;
   uploadUrl?: string;
   key?: string;
+  shortId?: string;
   publicUrl?: string;
   expiresIn?: number;
   error?: string;

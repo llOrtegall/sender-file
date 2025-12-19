@@ -2,6 +2,10 @@ import { PutObjectCommand, GetObjectCommand, HeadObjectCommand } from "@aws-sdk/
 import { UploadUrlResponse, DownloadUrlResponse } from "../types/index";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { r2Client, r2Config } from "../config/r2";
+import { generateShortId } from "../utils/generateShortId";
+
+// Mapa en memoria para asociar IDs cortos con keys reales de R2
+const shortIdMap = new Map<string, string>();
 
 /**
  * Genera una URL firmada (PUT) para subir directo a R2 sin pasar por el VPS
@@ -12,14 +16,6 @@ export async function getUploadPresignedUrl(
   expectedSize?: number
 ): Promise<UploadUrlResponse> {
   try {
-    const ext = originalFileName.split(".").pop()?.toLowerCase();
-    if (!ext || !r2Config.allowedTypes.includes(ext)) {
-      return {
-        success: false,
-        error: `Tipo de archivo no permitido. Permitidos: ${r2Config.allowedTypes.join(", ")}`,
-      };
-    }
-
     if (typeof expectedSize === "number" && expectedSize > r2Config.maxFileSize) {
       return {
         success: false,
@@ -27,8 +23,15 @@ export async function getUploadPresignedUrl(
       };
     }
 
+    // Generar la key real de R2 (como antes)
     const timestamp = Date.now();
     const key = `${timestamp}-${originalFileName}`;
+
+    // Generar un ID corto para mostrar al usuario
+    const shortId = generateShortId(8);
+    
+    // Guardar el mapeo shortId -> key real
+    shortIdMap.set(shortId, key);
 
     const command = new PutObjectCommand({
       Bucket: r2Config.bucketName,
@@ -42,6 +45,7 @@ export async function getUploadPresignedUrl(
       success: true,
       uploadUrl: url,
       key,
+      shortId, // ID corto para mostrar al usuario
       expiresIn: r2Config.urlExpirySeconds || 300,
     };
   } catch (error) {
@@ -55,10 +59,13 @@ export async function getUploadPresignedUrl(
 
 /**
  * Genera una URL firmada (GET) para descargar un archivo de R2
- * Valida que el archivo exista antes de generar la URL
+ * Acepta tanto el ID corto como la key real de R2
  */
-export async function getDownloadPresignedUrl(key: string): Promise<DownloadUrlResponse> {
+export async function getDownloadPresignedUrl(keyOrShortId: string): Promise<DownloadUrlResponse> {
   try {
+    // Intentar obtener la key real desde el shortId
+    let key = shortIdMap.get(keyOrShortId) || keyOrShortId;
+
     // Verificar existencia del archivo antes de devolver la URL
     try {
       const headCommand = new HeadObjectCommand({
@@ -71,6 +78,7 @@ export async function getDownloadPresignedUrl(key: string): Promise<DownloadUrlR
       if (!ContentLength) {
         throw new Error("Archivo no encontrado");
       }
+      
       // Generar URL firmada para descarga
       const command = new GetObjectCommand({
         Bucket: r2Config.bucketName,

@@ -22,6 +22,7 @@ type UseFileUploadReturn = {
 type UploadResponse = {
   expiresIn: number;
   key: string;
+  shortId?: string;
   success: boolean;
   uploadUrl: string;
 }
@@ -84,10 +85,10 @@ export const useFileUpload = (): UseFileUploadReturn => {
 
         xhr.addEventListener('load', () => {
           if (xhr.status === 200) {
-            // Usar el key devuelto por el backend
-            const keyFile = getUrlRes.data.key;
-            if (keyFile) {
-              setDownloadLink(`${DOMAIN_URL}/download/${keyFile}`);
+            // Usar el shortId si está disponible, sino usar la key completa
+            const displayId = getUrlRes.data.shortId || getUrlRes.data.key;
+            if (displayId) {
+              setDownloadLink(`${DOMAIN_URL}/${displayId}`);
             }
             resolve();
           } else {

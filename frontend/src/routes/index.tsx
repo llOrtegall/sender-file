@@ -21,7 +21,7 @@ const router = createBrowserRouter([
         )
       },
       {
-        path: '/download/:id',
+        path: '/:id',
         element: (
           <Suspense fallback={<Loading />}>
             <DowloadPage />
