@@ -24,6 +24,5 @@ app.use("/api/v1/files", fileRouter);
 // Iniciar servidor
 app.listen(PORT, () => {
   console.log(`🚀 Servidor ejecutándose en puerto ${PORT}`);
-  console.log(`📝 Documentación: http://localhost:${PORT}`);
   console.log(`🏥 Health check: http://localhost:${PORT}/health`);
 });

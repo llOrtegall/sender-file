@@ -6,8 +6,8 @@ services:
       dockerfile: Dockerfile
     image: ${IMG_NAME_BACK}:${VERSION_BACK}
     container_name: ${CONTAINER_NAME_BACK}
-    ports:
-      - "3000:3000"
+    # ports:
+    #   - "3000:3000"
     env_file:
       - ./backend/.env
     environment:
@@ -30,8 +30,8 @@ services:
       dockerfile: Dockerfile
     image: ${IMG_NAME_FRONT}:${VERSION_FRONT}
     container_name: ${CONTAINER_NAME_FRONT}
-    ports:
-      - "80:80"
+    # ports:
+    #   - "80:80"
     restart: unless-stopped
     depends_on:
       backend:
