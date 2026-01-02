@@ -29,7 +29,7 @@ export default function UploadSuccess({ downloadLink, onUploadAgain }: UploadSuc
           type="text"
           value={downloadLink}
           readOnly
-          className="text-sm text-ellipsis flex-1 bg-transparent outline-none"
+          className="text-sm text-ellipsis flex-1 bg-transparent outline-none text-center"
           aria-label="Download link"
         />
         <button
