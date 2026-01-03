@@ -11,8 +11,13 @@ export const NavBar = () => {
           <span className="font-imb-400 text-gray-300 ">wShare</span>
         </Link>
         <div className="flex gap-4 font-imb-400 text-gray-300 text-[12px] xl:text-[14px] 2xl:text-[16px]">
-          <button disabled>Login</button>
-          <button disabled className="bg-green-1 px-2 py-0.5 rounded-md">Register</button>
+          <a
+            target="_blank"
+            rel="noopener noreferrer"
+            href="https://whatsapp.com/channel/0029Va4on5GJJhzfsxIren2m"
+            className="bg-green-1 px-2 py-0.5 rounded-md hover:bg-green-4 cursor-pointer">
+            Join the Community
+          </a>
         </div>
       </nav>
     </header>
