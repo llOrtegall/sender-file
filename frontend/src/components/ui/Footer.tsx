@@ -4,18 +4,13 @@ const SOCIAL_LINKS = [
   {
     href: "https://www.instagram.com/winkermind/",
     ariaLabel: "Instagram",
-    image: { src: "/ig.png", alt: "Instagram Logo" },
+    text: "IG",
   },
   {
     href: "https://www.facebook.com/winkermind",
     ariaLabel: "Facebook",
-    image: { src: "/fb.png", alt: "Facebook Logo" },
-  },
-  {
-    href: "https://whatsapp.com/channel/0029Va4on5GJJhzfsxIren2m",
-    ariaLabel: "WhatsApp",
-    text: "WA",
-  },
+    text: "FB",
+  }
 ];
 
 export const Footer = () => {
@@ -32,7 +27,7 @@ export const Footer = () => {
           target="_blank"
           rel="noopener noreferrer"
         >
-          winkermind©
+          Winkermind®
         </a>
         <span className='px-1'>
           2026
@@ -45,7 +40,6 @@ export const Footer = () => {
               key={link.ariaLabel}
               href={link.href}
               ariaLabel={link.ariaLabel}
-              image={link.image}
               text={link.text}
             />
           ))}
