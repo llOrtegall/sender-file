@@ -16,7 +16,9 @@ export default function UploadSuccess({ downloadLink, onUploadAgain }: UploadSuc
   }, [downloadLink]);
 
   return (
-    <article className="bg-green-3 rounded-full h-96 w-96 flex flex-col space-y-2 items-center justify-center border border-green-4 hover:bg-green-2 transition-colors">
+    <article className="bg-green-3 rounded-full 
+      h-64 w-64 lg:h-72 lg:w-72 2xl:h-96 2xl:w-96
+      flex flex-col space-y-2 items-center justify-center border border-green-4 hover:bg-green-2 transition-colors">
       <figure>
         <CheckCircle size={48} color="#22c55e" />
       </figure>
@@ -29,7 +31,7 @@ export default function UploadSuccess({ downloadLink, onUploadAgain }: UploadSuc
           type="text"
           value={downloadLink}
           readOnly
-          className="text-sm text-ellipsis flex-1 bg-transparent outline-none"
+          className="text-sm text-ellipsis flex-1 bg-transparent outline-none text-center"
           aria-label="Download link"
         />
         <button

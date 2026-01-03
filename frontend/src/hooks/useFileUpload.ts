@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import axios from 'axios';
 import { DOMAIN_URL } from '../main';
 
@@ -14,8 +14,11 @@ type UseFileUploadReturn = {
   uploadFile: (file: File) => Promise<void>;
   downloadLink: string | null;
   isUploading: boolean;
+  isCancelling: boolean;
+  isMultipartUpload: boolean;
   error: string | null;
   progress: UploadProgress | null;
+  cancelUpload: () => Promise<void>;
   resetUpload: () => void;
 };
 
@@ -58,16 +61,43 @@ const MAX_CONCURRENCY = 4;
 export const useFileUpload = (): UseFileUploadReturn => {
   const [downloadLink, setDownloadLink] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [isCancelling, setIsCancelling] = useState(false);
+  const [isMultipartUpload, setIsMultipartUpload] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [progress, setProgress] = useState<UploadProgress | null>(null);
 
+  const cancelRequestedRef = useRef(false);
+  const multipartSessionRef = useRef<{ uploadId: string; keyOrShortId: string } | null>(null);
+  const controllersRef = useRef<AbortController[]>([]);
+  const errorTimeoutRef = useRef<number | null>(null);
+
+  const scheduleErrorClear = useCallback((ms: number) => {
+    if (errorTimeoutRef.current) {
+      clearTimeout(errorTimeoutRef.current);
+    }
+    errorTimeoutRef.current = window.setTimeout(() => {
+      setError(null);
+      errorTimeoutRef.current = null;
+    }, ms);
+  }, []);
+
   const uploadFile = useCallback(async (file: File) => {
     setIsUploading(true);
+    setIsCancelling(false);
     setError(null);
     setProgress(null);
+    cancelRequestedRef.current = false;
+    multipartSessionRef.current = null;
+    controllersRef.current.forEach((controller) => controller.abort());
+    controllersRef.current = [];
+    if (errorTimeoutRef.current) {
+      clearTimeout(errorTimeoutRef.current);
+      errorTimeoutRef.current = null;
+    }
 
     try {
       const shouldUseMultipart = file.size >= MULTIPART_THRESHOLD_BYTES;
+      setIsMultipartUpload(shouldUseMultipart);
 
       if (!shouldUseMultipart) {
         // Subida simple con XHR para progreso detallado
@@ -152,6 +182,10 @@ export const useFileUpload = (): UseFileUploadReturn => {
       const resolvedKey = initiateRes.data.shortId || initiateRes.data.key;
       const partSize = initiateRes.data.partSize || 10 * 1024 * 1024;
 
+      multipartSessionRef.current = uploadId && resolvedKey
+        ? { uploadId, keyOrShortId: resolvedKey }
+        : null;
+
       const totalParts = Math.ceil(file.size / partSize);
       const parts = Array.from({ length: totalParts }, (_, idx) => {
         const start = idx * partSize;
@@ -164,6 +198,8 @@ export const useFileUpload = (): UseFileUploadReturn => {
       const completedParts: { etag: string; partNumber: number }[] = [];
 
       const uploadPart = async (part: { partNumber: number; blob: Blob }) => {
+        if (cancelRequestedRef.current) return;
+
         const partUrlRes = await axios.post<MultipartPartUrlResponse>('/upload-multipart/part-url', {
           keyOrShortId: resolvedKey,
           uploadId,
@@ -175,13 +211,19 @@ export const useFileUpload = (): UseFileUploadReturn => {
           throw new Error(partUrlRes.data?.error || `No se pudo obtener URL para la parte ${part.partNumber}`);
         }
 
+        const controller = new AbortController();
+        controllersRef.current.push(controller);
+
         const putRes = await axios.put(partUrlRes.data.uploadUrl, part.blob, {
           headers: {
             'Content-Type': file.type || 'application/octet-stream',
           },
           withCredentials: false, // Presigned URL de R2 no acepta credenciales
+          signal: controller.signal,
           // onUploadProgress per parte sería granular pero poco confiable en presigned URL; usamos progreso por parte completada
         });
+
+        controllersRef.current = controllersRef.current.filter((c) => c !== controller);
 
         const etag = (putRes.headers?.etag as string | undefined)?.replace(/"/g, '');
         if (!etag) {
@@ -207,7 +249,7 @@ export const useFileUpload = (): UseFileUploadReturn => {
 
       const queue = [...parts];
       const workers = Array.from({ length: Math.min(MAX_CONCURRENCY, queue.length) }, async () => {
-        while (queue.length) {
+        while (queue.length && !cancelRequestedRef.current) {
           const next = queue.shift();
           if (next) {
             await uploadPart(next);
@@ -217,6 +259,9 @@ export const useFileUpload = (): UseFileUploadReturn => {
 
       try {
         await Promise.all(workers);
+        if (cancelRequestedRef.current) {
+          return;
+        }
       } catch (err) {
         // Ante fallo, abortar multipart
         try {
@@ -225,6 +270,10 @@ export const useFileUpload = (): UseFileUploadReturn => {
           console.error('Abort multipart failed:', abortErr);
         }
         throw err;
+      }
+
+      if (cancelRequestedRef.current) {
+        return;
       }
 
       const completeRes = await axios.post<MultipartCompleteResponse>('/upload-multipart/complete', {
@@ -250,26 +299,75 @@ export const useFileUpload = (): UseFileUploadReturn => {
       }
 
     } catch (err) {
+      if (cancelRequestedRef.current) {
+        // Cancelación solicitada por el usuario
+        return;
+      }
+
       setError('Error al subir el archivo. Por favor, intenta de nuevo.');
       console.error('Upload error:', err);
       setDownloadLink(null);
     } finally {
+      controllersRef.current.forEach((controller) => controller.abort());
+      controllersRef.current = [];
+      multipartSessionRef.current = null;
       setIsUploading(false);
+      setIsCancelling(false);
     }
   }, []);
+
+  const cancelUpload = useCallback(async () => {
+    cancelRequestedRef.current = true;
+    setIsCancelling(true);
+
+    controllersRef.current.forEach((controller) => controller.abort());
+    controllersRef.current = [];
+
+    const session = multipartSessionRef.current;
+    if (session) {
+      try {
+        await axios.post('/upload-multipart/abort', {
+          keyOrShortId: session.keyOrShortId,
+          uploadId: session.uploadId,
+        });
+      } catch (abortErr) {
+        console.error('Abort multipart failed:', abortErr);
+      }
+    }
+
+    setError('Subida cancelada por el usuario.');
+    scheduleErrorClear(6000);
+    setDownloadLink(null);
+    setProgress(null);
+    setIsUploading(false);
+    setIsCancelling(false);
+    multipartSessionRef.current = null;
+  }, [scheduleErrorClear]);
 
   const resetUpload = useCallback(() => {
     setDownloadLink(null);
     setError(null);
     setProgress(null);
+    setIsMultipartUpload(false);
+    cancelRequestedRef.current = false;
+    multipartSessionRef.current = null;
+    controllersRef.current.forEach((controller) => controller.abort());
+    controllersRef.current = [];
+    if (errorTimeoutRef.current) {
+      clearTimeout(errorTimeoutRef.current);
+      errorTimeoutRef.current = null;
+    }
   }, []);
 
   return {
     uploadFile,
     downloadLink,
     isUploading,
+    isCancelling,
+    isMultipartUpload,
     error,
     progress,
+    cancelUpload,
     resetUpload,
   };
 };
