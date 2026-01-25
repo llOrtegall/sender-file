@@ -8,7 +8,9 @@ import { PORT, CORS_ORIGIN } from "./config/envSchema";
 const app = express();
 
 // Middleware
-app.use(cors({ origin: CORS_ORIGIN, optionsSuccessStatus: 200, credentials: true }));
+app.use(
+  cors({ origin: CORS_ORIGIN, optionsSuccessStatus: 200, credentials: true }),
+);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(morgan("dev"));
