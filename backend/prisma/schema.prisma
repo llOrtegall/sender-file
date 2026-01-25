@@ -14,9 +14,9 @@ datasource db {
 }
 
 model UrlMapping {
-  id        String   @id @default(cuid())
-  shortId   String   @unique
-  longUrl   String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id           String   @id @default(cuid())
+  shortId      String   @unique
+  longNameFile String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 }
