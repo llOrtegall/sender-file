@@ -18,14 +18,10 @@ import {
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { r2Client, r2Config } from "../config/r2";
 import { generateShortId } from "../utils/generateShortId";
-
-// Mapa en memoria para asociar IDs cortos con keys reales de R2
-const shortIdMap = new Map<string, string>();
+import { prisma } from "../lib/prisma";
 
 const MIN_PART_SIZE_BYTES = 5 * 1024 * 1024; // R2/S3 exige >= 5MB por parte
 const DEFAULT_PART_SIZE_BYTES = 10 * 1024 * 1024;
-
-const resolveKey = (keyOrShortId: string): string => shortIdMap.get(keyOrShortId) || keyOrShortId;
 
 /**
  * Genera una URL firmada (PUT) para subir directo a R2 sin pasar por el VPS
@@ -50,8 +46,13 @@ export async function getUploadPresignedUrl(
     // Generar un ID corto para mostrar al usuario
     const shortId = generateShortId(8);
     
-    // Guardar el mapeo shortId -> key real
-    shortIdMap.set(shortId, key);
+    // Almacenar en la base de datos pg
+    await prisma.urlMapping.create({
+      data: {
+        shortId: shortId,
+        longUrl: key,
+      }
+    })
 
     const command = new PutObjectCommand({
       Bucket: r2Config.bucketName,
@@ -81,16 +82,19 @@ export async function getUploadPresignedUrl(
  * Genera una URL firmada (GET) para descargar un archivo de R2
  * Acepta tanto el ID corto como la key real de R2
  */
-export async function getDownloadPresignedUrl(keyOrShortId: string): Promise<DownloadUrlResponse> {
+export async function getDownloadPresignedUrl(ShortId: string): Promise<DownloadUrlResponse> {
   try {
-    // Intentar obtener la key real desde el shortId
-    let key = shortIdMap.get(keyOrShortId) || keyOrShortId;
-
+    const { longUrl } = await prisma.urlMapping.findFirstOrThrow({
+      where: { shortId: ShortId },
+      select: {
+        longUrl: true,
+      }
+    })
     // Verificar existencia del archivo antes de devolver la URL
     try {
       const headCommand = new HeadObjectCommand({
         Bucket: r2Config.bucketName,
-        Key: key,
+        Key: longUrl,
       });
 
       const { LastModified, ContentLength } = await r2Client.send(headCommand);
@@ -102,7 +106,7 @@ export async function getDownloadPresignedUrl(keyOrShortId: string): Promise<Dow
       // Generar URL firmada para descarga
       const command = new GetObjectCommand({
         Bucket: r2Config.bucketName,
-        Key: key,
+        Key: longUrl,
       });
 
       const url = await getSignedUrl(r2Client, command, { expiresIn: r2Config.urlExpirySeconds || 300 });
@@ -110,7 +114,7 @@ export async function getDownloadPresignedUrl(keyOrShortId: string): Promise<Dow
       return {
         success: true,
         downloadUrl: url,
-        key,
+        key: longUrl,
         expiresIn: r2Config.urlExpirySeconds || 300,
         LastModified
       };
@@ -152,7 +156,13 @@ export async function initiateMultipartUpload(
     const shortId = generateShortId(8);
     const resolvedPartSize = Math.max(MIN_PART_SIZE_BYTES, partSizeBytes ?? DEFAULT_PART_SIZE_BYTES);
 
-    shortIdMap.set(shortId, key);
+    // Almacenar en la base de datos pg
+    await prisma.urlMapping.create({
+      data: {
+        shortId: shortId,
+        longUrl: key,
+      }
+    })
 
     const command = new CreateMultipartUploadCommand({
       Bucket: r2Config.bucketName,
@@ -201,11 +211,14 @@ export async function getMultipartPartPresignedUrl(
       throw new Error("partNumber debe estar entre 1 y 10000");
     }
 
-    const key = resolveKey(keyOrShortId);
+    const { longUrl } = await prisma.urlMapping.findFirstOrThrow({
+      where: { shortId: keyOrShortId },
+      select: { longUrl: true },
+    });
 
     const command = new UploadPartCommand({
       Bucket: r2Config.bucketName,
-      Key: key,
+      Key: longUrl,
       UploadId: uploadId,
       PartNumber: partNumber,
       ContentLength: contentLength,
@@ -216,7 +229,7 @@ export async function getMultipartPartPresignedUrl(
     return {
       success: true,
       uploadUrl,
-      key,
+      key: longUrl,
       partNumber,
       expiresIn: r2Config.urlExpirySeconds || 300,
     };
@@ -246,7 +259,10 @@ export async function completeMultipartUpload(
       throw new Error("Se requieren las partes para completar el upload");
     }
 
-    const key = resolveKey(keyOrShortId);
+    const { longUrl } = await prisma.urlMapping.findFirstOrThrow({
+      where: { shortId: keyOrShortId },
+      select: { longUrl: true },
+    });
 
     const sortedParts = parts
       .map((p) => ({ ETag: p.etag, PartNumber: p.partNumber }))
@@ -254,7 +270,7 @@ export async function completeMultipartUpload(
 
     const command = new CompleteMultipartUploadCommand({
       Bucket: r2Config.bucketName,
-      Key: key,
+      Key: longUrl,
       UploadId: uploadId,
       MultipartUpload: { Parts: sortedParts },
     });
@@ -263,7 +279,7 @@ export async function completeMultipartUpload(
 
     return {
       success: true,
-      key: result.Key || key,
+      key: result.Key || longUrl,
     };
   } catch (error) {
     console.error("Error al completar multipart:", error);
@@ -286,11 +302,14 @@ export async function abortMultipartUpload(
       throw new Error("UploadId es requerido");
     }
 
-    const key = resolveKey(keyOrShortId);
+    const { longUrl } = await prisma.urlMapping.findFirstOrThrow({
+      where: { shortId: keyOrShortId },
+      select: { longUrl: true },
+    });
 
     const command = new AbortMultipartUploadCommand({
       Bucket: r2Config.bucketName,
-      Key: key,
+      Key: longUrl,
       UploadId: uploadId,
     });
 
@@ -298,7 +317,7 @@ export async function abortMultipartUpload(
 
     return {
       success: true,
-      key,
+      key: longUrl,
     };
   } catch (error) {
     console.error("Error al abortar multipart:", error);
