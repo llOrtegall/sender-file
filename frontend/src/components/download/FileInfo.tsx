@@ -8,18 +8,30 @@ type FileInfoProps = {
   onDownload?: (downloadUrl: string, key: string) => Promise<void>;
 };
 
+function extractFileName(key: string): string {
+  const UUID_LENGTH = 36;
+  
+  if (key.length > UUID_LENGTH + 1) {
+    return key.substring(UUID_LENGTH + 1); 
+  }
+  
+  return key;
+}
+
 export default function FileInfo({ fileData, isDownloading = false, downloadProgress = 0, onDownload }: FileInfoProps) {
+  const fileName = extractFileName(fileData.key);
+  
   return (
     <section className="bg-green-5 min-w-156.5 flex flex-col items-center px-12 py-4 rounded-3xl space-y-4">
-      <h2 className="font-imb-600 text-lg text-gray-200 text-center wrap-break-word">{
-      fileData.key.split('-').slice(1).join('-') || 'Unknown File'
-      }</h2>
+      <h2 className="font-imb-600 text-lg text-gray-200 text-center wrap-break-word">
+        {fileName || 'Unknown File'}
+      </h2>
 
       <article className="font-imb-400 text-sm text-gray-1 flex items-center gap-2">
-        <span className="truncate max-w-64" title={fileData.key}>{fileData.key.split('-')[0] || 'Unknown Prefix'}</span>
+        <span className="truncate max-w-64" title={fileData.key}>{fileName}</span>
         <span>•</span>
-        <span>{fileData.LastModified.split('T')[0] || 'Unknown Date'}</span>
-        <span>{fileData.LastModified.split('T')[1].split('.')[0] || 'Unknown Time'}</span>
+        <span>{fileData.lastModified.split('T')[0] || 'Unknown Date'}</span>
+        <span>{fileData.lastModified.split('T')[1].split('.')[0] || 'Unknown Time'}</span>
 
       </article>
 
