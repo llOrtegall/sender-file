@@ -8,7 +8,7 @@ import {
   R2_ENDPOINT,
   R2_SECRET_ACCESS_KEY,
   URL_EXPIRY_SECONDS,
-} from "./envSchema";
+} from "../schema/envSchema";
 
 // Cliente S3 configurado para R2
 export const r2Client = new S3Client({
