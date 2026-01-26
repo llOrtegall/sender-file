@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 
-import { getUploadPresignedUrl } from "../services/getUploadUrl";
+import { getUploadPresignedUrl } from "../services/GetUploadUrl";
 import { getDownloadPresignedUrl } from "../services/GetDowloadUrl";
 
 import { validateUpload } from "../schema/UploadValidator";
@@ -107,12 +107,10 @@ export const getMultipartPartUrlHandler = async (
       req.body || {};
 
     if (!keyOrShortId || !uploadId || typeof partNumber !== "number") {
-      return res
-        .status(400)
-        .json({
-          success: false,
-          error: "Se requiere keyOrShortId, uploadId y partNumber",
-        });
+      return res.status(400).json({
+        success: false,
+        error: "Se requiere keyOrShortId, uploadId y partNumber",
+      });
     }
 
     const result = await getMultipartPartPresignedUrl(
@@ -147,12 +145,10 @@ export const completeMultipartUploadHandler = async (
     const { keyOrShortId, uploadId, parts } = req.body || {};
 
     if (!keyOrShortId || !uploadId || !Array.isArray(parts)) {
-      return res
-        .status(400)
-        .json({
-          success: false,
-          error: "Se requiere keyOrShortId, uploadId y parts",
-        });
+      return res.status(400).json({
+        success: false,
+        error: "Se requiere keyOrShortId, uploadId y parts",
+      });
     }
 
     const normalizedParts = parts
@@ -163,12 +159,10 @@ export const completeMultipartUploadHandler = async (
       .map((p: any) => ({ partNumber: p.partNumber, etag: p.etag }));
 
     if (normalizedParts.length === 0) {
-      return res
-        .status(400)
-        .json({
-          success: false,
-          error: "La lista de parts es inválida o vacía",
-        });
+      return res.status(400).json({
+        success: false,
+        error: "La lista de parts es inválida o vacía",
+      });
     }
 
     const result = await completeMultipartUpload(
