@@ -1,24 +1,19 @@
 import {
-  PutObjectCommand,
-  GetObjectCommand,
-  HeadObjectCommand,
   CreateMultipartUploadCommand,
   UploadPartCommand,
   CompleteMultipartUploadCommand,
   AbortMultipartUploadCommand,
 } from "@aws-sdk/client-s3";
 import {
-  UploadUrlResponse,
-  DownloadUrlResponse,
   MultipartInitiateResponse,
   MultipartPartUrlResponse,
   MultipartCompleteResponse,
   MultipartAbortResponse,
 } from "../types/index";
+
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { r2Client, r2Config } from "../config/r2";
 import { generateShortId } from "../utils/generateShortId";
-import { prisma } from "../lib/prisma";
 
 const MIN_PART_SIZE_BYTES = 5 * 1024 * 1024; // R2/S3 exige >= 5MB por parte
 const DEFAULT_PART_SIZE_BYTES = 10 * 1024 * 1024;

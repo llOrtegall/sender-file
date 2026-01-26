@@ -1,4 +1,4 @@
-import { Request, Response } from "express";
+import type { Request, Response } from "express";
 
 import { getUploadPresignedUrl } from "../services/GetUploadUrl";
 import { getDownloadPresignedUrl } from "../services/GetDowloadUrl";
