@@ -3,7 +3,7 @@ import { generateShortId } from "../utils/generateShortId";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { r2Client, r2Config } from "../config/r2";
 import { randomUUID } from "node:crypto";
-import { prisma } from "../lib/prisma";
+import { saveMapping } from "./persistence";
 
 type UploadUrlSuccess = {
   success: true;
@@ -62,12 +62,7 @@ async function saveUrlMapping(key: string): Promise<string> {
   const shortId = generateShortId(SHORT_ID_LENGTH);
 
   try {
-    await prisma.urlMapping.create({
-      data: {
-        shortId,
-        longNameFile: key,
-      },
-    });
+    await saveMapping(shortId, key);
     return shortId;
   } catch (error) {
     console.error("Error al crear el mapeo en la base de datos:", error);

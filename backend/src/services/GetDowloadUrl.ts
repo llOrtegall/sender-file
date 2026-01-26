@@ -1,7 +1,7 @@
 import { GetObjectCommand, HeadObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { r2Client, r2Config } from "../config/r2";
-import { prisma } from "../lib/prisma";
+import { getOneByShortId } from "./persistence";
 
 type FileMetadata = {
   key: string;
@@ -37,12 +37,12 @@ const ERROR_MESSAGES = {
 
 async function findFileKey(shortId: string): Promise<string> {
   try {
-    const mapping = await prisma.urlMapping.findFirstOrThrow({
-      where: { shortId },
-      select: {
-        longNameFile: true,
-      },
-    });
+    const mapping = await getOneByShortId(shortId);
+
+    if (!mapping) {
+      throw new Error(ERROR_MESSAGES.MAPPING_NOT_FOUND);
+    }
+
     return mapping.longNameFile;
   } catch (error) {
     console.error(`Error al buscar mapeo para shortId "${shortId}":`, error);
