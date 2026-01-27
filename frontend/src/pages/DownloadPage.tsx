@@ -6,7 +6,7 @@ import ErrorState from '../components/ui/ErrorState';
 
 export default function DownloadPage() {
   const { id } = useParams<{ id: string }>();
-  console.log(id);
+
   const { fileData, isLoading, isDownloading, downloadProgress, error, downloadFile } = useFileDownload(id);
 
   if (isLoading) return <LoadingState message="Cargando información del archivo..." />

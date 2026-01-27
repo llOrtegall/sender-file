@@ -6,3 +6,6 @@ dist/
 *.log
 .idea/
 .vscode/
+
+/src/generated/prisma
+migrations/

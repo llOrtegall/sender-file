@@ -5,7 +5,7 @@ import { router } from './routes';
 import axios from 'axios';
 import './index.css';
 
-export const API_BASE_URL = import.meta.env.VITE_API_URL ?? "/api/v1";
+export const API_BASE_URL = import.meta.env.VITE_API_URL ?? "/backend";
 export const DOMAIN_URL = import.meta.env.VITE_DOMAIN_URL ?? "http://localhost:5173";
 
 axios.defaults.baseURL = API_BASE_URL;

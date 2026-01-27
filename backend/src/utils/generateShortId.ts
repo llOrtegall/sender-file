@@ -1,4 +1,4 @@
-import { randomBytes } from 'crypto';
+import { randomBytes } from "crypto";
 
 /**
  * Genera un ID corto alfanumérico único
@@ -6,13 +6,14 @@ import { randomBytes } from 'crypto';
  * @returns ID corto aleatorio
  */
 export function generateShortId(length: number = 8): string {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  const chars =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
   const bytes = randomBytes(length);
-  let result = '';
-  
+  let result = "";
+
   for (let i = 0; i < length; i++) {
     result += chars[bytes[i] % chars.length];
   }
-  
+
   return result;
 }

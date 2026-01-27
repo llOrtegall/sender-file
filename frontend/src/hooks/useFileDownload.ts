@@ -5,8 +5,10 @@ export type FileData = {
   success: boolean;
   downloadUrl: string;
   key: string;
+  expiresIn: number;
   size: number;
-  LastModified: string;
+  lastModified: string;
+  contentLength: number;
 };
 
 type UseFileDownloadReturn = {
