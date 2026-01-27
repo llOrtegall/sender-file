@@ -4,7 +4,7 @@ import {
   CompleteMultipartUploadCommand,
   AbortMultipartUploadCommand,
 } from "@aws-sdk/client-s3";
-import {
+import type {
   MultipartInitiateResponse,
   MultipartPartUrlResponse,
   MultipartCompleteResponse,
@@ -14,8 +14,9 @@ import {
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { r2Client, r2Config } from "../config/r2";
 import { generateShortId } from "../utils/generateShortId";
+import { getOneByShortId, saveMapping } from "./persistence";
 
-const MIN_PART_SIZE_BYTES = 5 * 1024 * 1024; // R2/S3 exige >= 5MB por parte
+const MIN_PART_SIZE_BYTES = 20 * 1024 * 1024;
 const DEFAULT_PART_SIZE_BYTES = 10 * 1024 * 1024;
 
 /**
@@ -46,13 +47,7 @@ export async function initiateMultipartUpload(
       partSizeBytes ?? DEFAULT_PART_SIZE_BYTES,
     );
 
-    // Almacenar en la base de datos pg
-    await prisma.urlMapping.create({
-      data: {
-        shortId: shortId,
-        longNameFile: key,
-      },
-    });
+    await saveMapping(shortId, key);
 
     const command = new CreateMultipartUploadCommand({
       Bucket: r2Config.bucketName,
@@ -101,14 +96,15 @@ export async function getMultipartPartPresignedUrl(
       throw new Error("partNumber debe estar entre 1 y 10000");
     }
 
-    const { longNameFile } = await prisma.urlMapping.findFirstOrThrow({
-      where: { shortId: keyOrShortId },
-      select: { longNameFile: true },
-    });
+    const mapping = await getOneByShortId(keyOrShortId);
+
+    if (!mapping) {
+      throw new Error("No se encontró el archivo asociado al identificador");
+    }
 
     const command = new UploadPartCommand({
       Bucket: r2Config.bucketName,
-      Key: longNameFile,
+      Key: mapping.longNameFile,
       UploadId: uploadId,
       PartNumber: partNumber,
       ContentLength: contentLength,
@@ -121,7 +117,7 @@ export async function getMultipartPartPresignedUrl(
     return {
       success: true,
       uploadUrl,
-      key: longNameFile,
+      key: mapping.longNameFile,
       partNumber,
       expiresIn: r2Config.urlExpirySeconds || 300,
     };
@@ -151,10 +147,11 @@ export async function completeMultipartUpload(
       throw new Error("Se requieren las partes para completar el upload");
     }
 
-    const { longNameFile } = await prisma.urlMapping.findFirstOrThrow({
-      where: { shortId: keyOrShortId },
-      select: { longNameFile: true },
-    });
+    const mapping = await getOneByShortId(keyOrShortId);
+
+    if (!mapping) {
+      throw new Error("No se encontró el archivo asociado al identificador");
+    }
 
     const sortedParts = parts
       .map((p) => ({ ETag: p.etag, PartNumber: p.partNumber }))
@@ -162,7 +159,7 @@ export async function completeMultipartUpload(
 
     const command = new CompleteMultipartUploadCommand({
       Bucket: r2Config.bucketName,
-      Key: longNameFile,
+      Key: mapping.longNameFile,
       UploadId: uploadId,
       MultipartUpload: { Parts: sortedParts },
     });
@@ -171,7 +168,7 @@ export async function completeMultipartUpload(
 
     return {
       success: true,
-      key: result.Key || longNameFile,
+      key: result.Key || mapping.longNameFile,
     };
   } catch (error) {
     console.error("Error al completar multipart:", error);
@@ -194,14 +191,15 @@ export async function abortMultipartUpload(
       throw new Error("UploadId es requerido");
     }
 
-    const { longNameFile } = await prisma.urlMapping.findFirstOrThrow({
-      where: { shortId: keyOrShortId },
-      select: { longNameFile: true },
-    });
+    const mapping = await getOneByShortId(keyOrShortId);
+
+    if (!mapping) {
+      throw new Error("No se encontró el archivo asociado al identificador");
+    }
 
     const command = new AbortMultipartUploadCommand({
       Bucket: r2Config.bucketName,
-      Key: longNameFile,
+      Key: mapping.longNameFile,
       UploadId: uploadId,
     });
 
@@ -209,7 +207,7 @@ export async function abortMultipartUpload(
 
     return {
       success: true,
-      key: longNameFile,
+      key: mapping.longNameFile,
     };
   } catch (error) {
     console.error("Error al abortar multipart:", error);

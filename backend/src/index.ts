@@ -31,9 +31,12 @@ app.listen(PORT, () => {
   console.log(`🏥 Health check: http://localhost:${PORT}/health`);
 });
 
-pgConn.authenticate()
+pgConn
+  .authenticate()
   .then(() => {
-    console.log("Conexión a la base de datos PostgreSQL establecida correctamente.");
+    console.log(
+      "Conexión a la base de datos PostgreSQL establecida correctamente.",
+    );
     return MappingUrl.sync(); // Sincroniza el modelo con la base de datos
   })
   .then(() => {
